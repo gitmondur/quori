@@ -1,8 +1,27 @@
 {
-  "name": "quory",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "quori",
+  "version": "1.0.0",
+  "description": "SQL History Manager",
+  "author": "Simon Haubro <simon.haubro@podimo.com>",
+  "repository": {
+    "type": "git",
+    "url": "[https://github.com/gitmondur/quori.git](https://github.com/gitmondur/quori.git)"
+  },
+  "build": {
+    "appId": "com.simon.quori",
+    "productName": "Quori",
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "gitmondur",
+        "repo": "quori"
+      }
+    ]
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",

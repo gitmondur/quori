@@ -3,29 +3,29 @@ import {
   Database, 
   Search, 
   Plus, 
-  History, 
+
   ChevronRight, 
   ChevronDown, 
   Code2, 
   Save, 
   Trash2, 
   Copy, 
-  Filter,
+
   GitBranch,
   Sparkles,
   Loader,
   Wand2,
   Settings,
-  CheckCircle,
+
   ExternalLink,
-  DownloadCloud,
+
   Clock,
   Folder,
   FolderOpen,
-  MoreVertical,
+
   PlusSquare,
   Pencil,
-  FileText,
+
   Table,
   PanelRightClose,
   PanelRightOpen,
@@ -210,12 +210,12 @@ export default function App() {
     setActiveProjectId(projectId);
   };
 
-  const toggleProjectExpansion = (e: any, projectId: any) => {
+  const toggleProjectExpansion = (e: React.MouseEvent, projectId: any) => {
     e.stopPropagation();
     setProjects(projects.map((p: any) => p.id === projectId ? { ...p, isExpanded: !p.isExpanded } : p));
   };
 
-  const handleRenameProject = (e: any, projectId: any, currentName: string) => {
+  const handleRenameProject = (e: React.MouseEvent, projectId: any, currentName: string) => {
     e.stopPropagation();
     setProjectToRenameId(projectId);
     setRenameProjectName(currentName);
@@ -280,13 +280,14 @@ export default function App() {
 
   const updateStory = (updatedStory: any) => setStories(stories.map((s: any) => s.id === updatedStory.id ? updatedStory : s));
 
-  const handleDeleteStory = (e: any, id: any) => {
+  const handleDeleteStory = (e: React.MouseEvent, id: any) => {
     e.stopPropagation();
     const newStories = stories.filter((s: any) => s.id !== id);
     setStories(newStories);
     if (activeStoryId === id) setActiveStoryId(null);
   };
 
+  // Explicitly using React.Fragment to ensure React is used in JSX
   return (
     <div className="flex h-screen bg-slate-900 text-slate-200 overflow-hidden font-sans">
       
@@ -592,11 +593,7 @@ function ActiveStoryView({ story, onUpdate, bqConfig, geminiApiKey }: any) {
     window.open(url, '_blank');
   };
 
-  // Mock Dry Run function since we removed the import
-  const mockDryRun = async () => {
-    // Just a placeholder since the button is visual/check syntax
-    return { message: "Syntax check simulated." };
-  };
+
 
   const handleAddVersion = async () => {
     let finalNote = draftNote;
