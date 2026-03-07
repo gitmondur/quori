@@ -2,10 +2,12 @@ import { useState, useMemo } from 'react';
 import {
   Code2, Plus, Save, Loader, Sparkles, ExternalLink,
   Table, PanelRightClose, PanelRightOpen, Clipboard, Database,
+  Lightbulb, X, RefreshCw,
 } from 'lucide-react';
 import { Story, BqConfig } from '../types';
 import { QueryCard } from './QueryCard';
 import { SchemaExplorer } from './SchemaExplorer';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { ConfirmDeleteModal } from './modals/ConfirmDeleteModal';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { extractTables } from '../lib/extractTables';
@@ -28,6 +30,34 @@ interface ActiveStoryViewProps {
   onUpdate: (story: Story) => void;
 }
 
+function buildInsightsPrompt(story: Story): string {
+  const versionsSummary = story.versions.map((v, i) => {
+    const date = new Date(v.timestamp).toLocaleString();
+    return `Version ${i + 1} (${date}):\nNote: "${v.note}"\nQuery:\n\`\`\`sql\n${v.query}\n\`\`\``
+  }).join('\n\n')
+
+  return `You are reviewing a BigQuery SQL investigation story called "${story.title}" (status: ${story.status}).
+The analyst made ${story.versions.length} version(s):
+
+${versionsSummary}
+
+Write a concise analysis using EXACTLY these four ## sections:
+
+## Investigation Goal
+What was the analyst trying to discover? (1-2 sentences)
+
+## How the Query Evolved
+Key changes and improvements across versions as a short bullet list. Skip this section if there is only one version.
+
+## What the Final Query Returns
+Plain-language description of what the latest query does and the shape of its output.
+
+## Suggested Next Steps
+2-3 concrete, actionable follow-up ideas as a numbered list.
+
+Be specific, practical, and brief. Use **bold** for key terms.`
+}
+
 export function ActiveStoryView({
   story,
   bqConfig,
@@ -43,6 +73,10 @@ export function ActiveStoryView({
   const [isRightPanelOpen, setIsRightPanelOpen] = usePersistedState('quori_right_panel_open', true);
   const [rightTab, setRightTab] = usePersistedState<RightTab>('quori_right_tab', 'detected');
   const [versionToDelete, setVersionToDelete] = useState<string | null>(null);
+
+  // Insights state
+  const [insights, setInsights] = useState<string | null>(null);
+  const [isInsighting, setIsInsighting] = useState(false);
 
   const detectedTables = useMemo(() => extractTables(story.versions), [story.versions]);
 
@@ -122,6 +156,22 @@ export function ActiveStoryView({
     setIsGenerating(false);
   };
 
+  const handleGenerateInsights = async () => {
+    if (!geminiApiKey) {
+      alert('Please configure your Gemini API Key in Settings to use Generate Insights.');
+      return;
+    }
+    if (story.versions.length === 0) {
+      alert('Add at least one query version before generating insights.');
+      return;
+    }
+    setIsInsighting(true);
+    setInsights(null);
+    const result = await callGemini(buildInsightsPrompt(story), geminiApiKey);
+    setInsights(result);
+    setIsInsighting(false);
+  };
+
   return (
     <div className="flex h-full">
       {/* ── Main timeline ───────────────────────────────────────────────── */}
@@ -135,7 +185,7 @@ export function ActiveStoryView({
               onChange={e => onUpdate({ ...story, title: e.target.value })}
               className="bg-transparent text-2xl font-bold text-slate-100 focus:outline-none focus:border-b border-indigo-500 w-full"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <button
                 onClick={handleStatusClick}
                 className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${STATUS_COLORS[story.status]}`}
@@ -143,9 +193,27 @@ export function ActiveStoryView({
               >
                 {story.status}
               </button>
+              {/* Generate Insights */}
+              <button
+                onClick={handleGenerateInsights}
+                disabled={isInsighting || !geminiApiKey || story.versions.length === 0}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  insights
+                    ? 'bg-amber-900/30 text-amber-300 border-amber-700 hover:bg-amber-900/50'
+                    : geminiApiKey
+                    ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-amber-300'
+                    : 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed'
+                }`}
+                title={!geminiApiKey ? 'Requires Gemini API Key' : 'Generate AI insights for this story'}
+              >
+                {isInsighting
+                  ? <Loader className="w-3.5 h-3.5 animate-spin" />
+                  : <Lightbulb className="w-3.5 h-3.5" />}
+                {isInsighting ? 'Analysing…' : 'Insights'}
+              </button>
               <button
                 onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-                className={`ml-2 p-1.5 rounded-md transition-colors ${
+                className={`p-1.5 rounded-md transition-colors ${
                   isRightPanelOpen
                     ? 'bg-indigo-900/50 text-indigo-300'
                     : 'text-slate-500 hover:text-white hover:bg-slate-800'
@@ -163,6 +231,43 @@ export function ActiveStoryView({
             <p>Last edited {new Date(story.lastModified).toLocaleString()}</p>
           </div>
         </div>
+
+        {/* Insights panel */}
+        {(isInsighting || insights) && (
+          <div className="mx-6 mt-4 bg-gradient-to-br from-amber-950/30 to-slate-900/80 border border-amber-800/40 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
+            {/* Panel header */}
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-800/30 bg-amber-900/10">
+              <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="text-sm font-semibold text-amber-300 flex-1">AI Insights</span>
+              <button
+                onClick={handleGenerateInsights}
+                disabled={isInsighting}
+                className="p-1 text-amber-600 hover:text-amber-400 transition-colors"
+                title="Regenerate"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isInsighting ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => setInsights(null)}
+                className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {/* Panel body */}
+            <div className="px-4 py-3 max-h-72 overflow-y-auto custom-scrollbar">
+              {isInsighting ? (
+                <div className="flex items-center gap-3 py-4 text-slate-500">
+                  <Loader className="w-4 h-4 animate-spin text-amber-500" />
+                  <span className="text-sm">Reading your query history…</span>
+                </div>
+              ) : insights ? (
+                <MarkdownRenderer text={insights} />
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
