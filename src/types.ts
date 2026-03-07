@@ -30,6 +30,21 @@ export interface BqConfig {
   location: string;
 }
 
+export interface GoogleUser {
+  email: string;
+  name: string;
+  picture: string;
+  sub: string;
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: number;
+}
+
+export interface OAuthConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
 export interface PendingDelete {
   type: 'story' | 'project';
   label: string;

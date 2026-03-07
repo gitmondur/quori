@@ -30,7 +30,7 @@ export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: Act
   const [draftNote, setDraftNote] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isRightPanelOpen, setIsRightPanelOpen] = usePersistedState('quory_right_panel_open', true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = usePersistedState('quori_right_panel_open', true);
   const [versionToDelete, setVersionToDelete] = useState<string | null>(null);
 
   const detectedTables = useMemo(() => extractTables(story.versions), [story.versions]);

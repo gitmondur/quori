@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronRight, Database, PlusSquare } from 'lucide-react';
 
-import { Project, Story, BqConfig, PendingDelete } from './types';
+import { Project, Story, BqConfig, OAuthConfig, PendingDelete } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
+import { useGoogleAuth } from './hooks/useGoogleAuth';
 
 import { Sidebar } from './components/Sidebar';
 import { ProjectOverview } from './components/ProjectOverview';
@@ -16,21 +17,42 @@ import { SettingsModal } from './components/modals/SettingsModal';
 
 export default function App() {
   // ── Persisted state ──────────────────────────────────────────────────────
-  const [projects, setProjects] = usePersistedState<Project[]>('quory_projects_v2', []);
-  const [stories, setStories] = usePersistedState<Story[]>('quory_stories_v2', []);
-  const [activeProjectId, setActiveProjectId] = usePersistedState<string | null>('quory_active_project_v2', null);
-  const [activeStoryId, setActiveStoryId] = usePersistedState<string | null>('quory_active_story_v2', null);
-  const [bqConfig, setBqConfig] = usePersistedState<BqConfig>('quory_bq_config', {
+  const [projects, setProjects] = usePersistedState<Project[]>('quori_projects_v2', []);
+  const [stories, setStories] = usePersistedState<Story[]>('quori_stories_v2', []);
+  const [activeProjectId, setActiveProjectId] = usePersistedState<string | null>('quori_active_project_v2', null);
+  const [activeStoryId, setActiveStoryId] = usePersistedState<string | null>('quori_active_story_v2', null);
+  const [bqConfig, setBqConfig] = usePersistedState<BqConfig>('quori_bq_config', {
     projectId: 'my-analytics-project',
     location: 'US',
   });
-  const [isSidebarOpen, setIsSidebarOpen] = usePersistedState('quory_sidebar_open', true);
-  const [geminiApiKey, setGeminiApiKey] = usePersistedState('quory_gemini_api_key', '');
+  const [isSidebarOpen, setIsSidebarOpen] = usePersistedState('quori_sidebar_open', true);
+  const [geminiApiKey, setGeminiApiKey] = usePersistedState('quori_gemini_api_key', '');
+  const [oauthConfig, setOAuthConfig] = usePersistedState<OAuthConfig>('quori_oauth_config', {
+    clientId: '',
+    clientSecret: '',
+  });
+
+  // ── Google Auth ───────────────────────────────────────────────────────────
+  const { user: googleUser, signIn, signOut } = useGoogleAuth(oauthConfig);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+
+  const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
+    setSignInError(null);
+    try {
+      await signIn();
+    } catch (err) {
+      setSignInError((err as Error).message);
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
 
   // ── UI state ─────────────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfig, setShowConfig] = useState(false);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(!localStorage.getItem('quory_gemini_api_key'));
+  const [showApiKeyModal, setShowApiKeyModal] = useState(!localStorage.getItem('quori_gemini_api_key'));
 
   // Project modals
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -105,7 +127,7 @@ export default function App() {
       type: 'project',
       label: `Project "${deletedProject?.name ?? ''}" deleted`,
       restore: () => {
-        setProjects(prev => [...prev, ...( deletedProject ? [deletedProject] : [])]);
+        setProjects(prev => [...prev, ...(deletedProject ? [deletedProject] : [])]);
         setStories(prev => [...prev, ...deletedStories]);
       },
     });
@@ -198,7 +220,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `quory-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `quori-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -213,7 +235,6 @@ export default function App() {
         const importedProjects: Project[] = data.projects ?? [];
         const importedStories: Story[] = data.stories ?? [];
 
-        // Merge: skip items whose IDs already exist
         setProjects(prev => {
           const existingIds = new Set(prev.map(p => p.id));
           return [...prev, ...importedProjects.filter(p => !existingIds.has(p.id))];
@@ -227,7 +248,6 @@ export default function App() {
       }
     };
     reader.readAsText(file);
-    // Reset input so the same file can be re-imported if needed
     e.target.value = '';
   };
 
@@ -255,6 +275,7 @@ export default function App() {
           onDeleteStory={handleDeleteStory}
           onRenameStory={handleRenameStory}
           onOpenSettings={() => setShowConfig(true)}
+          googleUser={googleUser}
         />
       </div>
 
@@ -289,7 +310,7 @@ export default function App() {
             <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mb-6 border border-slate-800">
               <Database className="w-10 h-10 text-indigo-500/50" />
             </div>
-            <h2 className="text-xl font-bold text-slate-300 mb-2">Welcome to Quory</h2>
+            <h2 className="text-xl font-bold text-slate-300 mb-2">Welcome to Quori</h2>
             <p className="text-slate-500 max-w-sm text-center">
               Select a project from the sidebar to view its queries or create a new one.
             </p>
@@ -341,6 +362,13 @@ export default function App() {
           onBqConfigChange={setBqConfig}
           geminiApiKey={geminiApiKey}
           onGeminiApiKeyChange={setGeminiApiKey}
+          oauthConfig={oauthConfig}
+          onOAuthConfigChange={setOAuthConfig}
+          googleUser={googleUser}
+          onGoogleSignIn={handleGoogleSignIn}
+          onGoogleSignOut={signOut}
+          isSigningIn={isSigningIn}
+          signInError={signInError}
           onClose={() => setShowConfig(false)}
           onExport={handleExport}
           onImport={handleImport}

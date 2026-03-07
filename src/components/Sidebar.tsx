@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Database, Search, Plus, ChevronRight, Folder, FolderOpen,
-  Pencil, Trash2, Settings,
+  Pencil, Trash2, Settings, LogIn,
 } from 'lucide-react';
-import { Project, Story } from '../types';
+import { Project, Story, GoogleUser } from '../types';
 
 interface SidebarProps {
   projects: Project[];
@@ -22,6 +22,7 @@ interface SidebarProps {
   onDeleteStory: (e: React.MouseEvent, storyId: string) => void;
   onRenameStory: (storyId: string, newTitle: string) => void;
   onOpenSettings: () => void;
+  googleUser: GoogleUser | null;
 }
 
 export function Sidebar({
@@ -41,6 +42,7 @@ export function Sidebar({
   onDeleteStory,
   onRenameStory,
   onOpenSettings,
+  googleUser,
 }: SidebarProps) {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -70,7 +72,7 @@ export function Sidebar({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-indigo-400 font-bold text-lg">
             <Database className="w-6 h-6" />
-            <span>Quory</span>
+            <span>Quori</span>
           </div>
           <button
             onClick={onOpenSettings}
@@ -238,6 +240,37 @@ export function Sidebar({
             );
           })}
         </div>
+      </div>
+
+      {/* User footer */}
+      <div className="border-t border-slate-800 p-3">
+        {googleUser ? (
+          <button
+            onClick={onOpenSettings}
+            className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-900 transition-colors group"
+            title="Signed in — open Settings"
+          >
+            <img
+              src={googleUser.picture}
+              alt={googleUser.name}
+              className="w-7 h-7 rounded-full border border-slate-700 flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-xs font-medium text-slate-300 truncate">{googleUser.name}</p>
+              <p className="text-[10px] text-slate-500 truncate">{googleUser.email}</p>
+            </div>
+            <Settings className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 flex-shrink-0" />
+          </button>
+        ) : (
+          <button
+            onClick={onOpenSettings}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors text-xs"
+            title="Connect Google account"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Connect Google Account</span>
+          </button>
+        )}
       </div>
     </>
   );

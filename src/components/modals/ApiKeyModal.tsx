@@ -29,7 +29,7 @@ export function ApiKeyModal({ onSave, onDismiss }: ApiKeyModalProps) {
             <Key className="w-8 h-8 text-indigo-400" />
           </div>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2 text-center">Welcome to Quory</h2>
+        <h2 className="text-xl font-bold text-white mb-2 text-center">Welcome to Quori</h2>
         <p className="text-slate-400 mb-6 text-sm text-center">
           To use AI features like smart naming and explanations, enter your Gemini API Key.
           You can also skip this and add it later in settings.

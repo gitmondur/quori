@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Custom Scrollbar from Quory */
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
