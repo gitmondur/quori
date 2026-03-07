@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import {
   Code2, Plus, Save, Loader, Sparkles, ExternalLink,
-  Table, PanelRightClose, PanelRightOpen, Clipboard,
+  Table, PanelRightClose, PanelRightOpen, Clipboard, Database,
 } from 'lucide-react';
 import { Story, BqConfig } from '../types';
 import { QueryCard } from './QueryCard';
+import { SchemaExplorer } from './SchemaExplorer';
 import { ConfirmDeleteModal } from './modals/ConfirmDeleteModal';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { extractTables } from '../lib/extractTables';
@@ -17,20 +18,30 @@ const STATUS_COLORS: Record<Story['status'], string> = {
   done: 'bg-blue-900/30 text-blue-400 border-blue-800 hover:bg-blue-900/50 cursor-pointer',
 };
 
+type RightTab = 'detected' | 'schema';
+
 interface ActiveStoryViewProps {
   story: Story;
   bqConfig: BqConfig;
   geminiApiKey: string;
+  accessToken: string | null;
   onUpdate: (story: Story) => void;
 }
 
-export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: ActiveStoryViewProps) {
+export function ActiveStoryView({
+  story,
+  bqConfig,
+  geminiApiKey,
+  accessToken,
+  onUpdate,
+}: ActiveStoryViewProps) {
   const [newQueryMode, setNewQueryMode] = useState(false);
   const [draftQuery, setDraftQuery] = useState('');
   const [draftNote, setDraftNote] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = usePersistedState('quori_right_panel_open', true);
+  const [rightTab, setRightTab] = usePersistedState<RightTab>('quori_right_tab', 'detected');
   const [versionToDelete, setVersionToDelete] = useState<string | null>(null);
 
   const detectedTables = useMemo(() => extractTables(story.versions), [story.versions]);
@@ -113,6 +124,7 @@ export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: Act
 
   return (
     <div className="flex h-full">
+      {/* ── Main timeline ───────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="p-6 pb-2 border-b border-slate-800 bg-slate-950/30">
@@ -138,9 +150,11 @@ export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: Act
                     ? 'bg-indigo-900/50 text-indigo-300'
                     : 'text-slate-500 hover:text-white hover:bg-slate-800'
                 }`}
-                title="Toggle Table Overview"
+                title="Toggle side panel"
               >
-                {isRightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+                {isRightPanelOpen
+                  ? <PanelRightClose className="w-5 h-5" />
+                  : <PanelRightOpen className="w-5 h-5" />}
               </button>
             </div>
           </div>
@@ -186,10 +200,7 @@ export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: Act
                       <Code2 className="w-4 h-4" />
                       <span>New Iteration</span>
                     </div>
-                    <button
-                      onClick={() => setNewQueryMode(false)}
-                      className="text-slate-500 hover:text-slate-300"
-                    >
+                    <button onClick={() => setNewQueryMode(false)} className="text-slate-500 hover:text-slate-300">
                       Cancel
                     </button>
                   </div>
@@ -256,44 +267,83 @@ export function ActiveStoryView({ story, bqConfig, geminiApiKey, onUpdate }: Act
         </div>
       </div>
 
-      {/* Right Panel: Table Overview */}
+      {/* ── Right panel ─────────────────────────────────────────────────── */}
       <div
         className={`transition-all duration-300 border-l border-slate-800 bg-slate-950 flex flex-col ${
           isRightPanelOpen ? 'w-72' : 'w-0 overflow-hidden'
         }`}
       >
-        <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-          <Table className="w-4 h-4 text-indigo-400" />
-          <span className="font-bold text-sm text-slate-200">Table Overview</span>
-          <span className="ml-auto bg-slate-800 text-slate-400 text-[10px] px-1.5 py-0.5 rounded-full">
-            {detectedTables.length}
-          </span>
+        {/* Tab bar */}
+        <div className="flex border-b border-slate-800 flex-shrink-0">
+          <button
+            onClick={() => setRightTab('detected')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors border-b-2 ${
+              rightTab === 'detected'
+                ? 'border-indigo-500 text-indigo-300'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Table className="w-3.5 h-3.5" />
+            Detected
+            {detectedTables.length > 0 && (
+              <span className="bg-slate-800 text-slate-400 text-[9px] px-1 py-0.5 rounded-full">
+                {detectedTables.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setRightTab('schema')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors border-b-2 ${
+              rightTab === 'schema'
+                ? 'border-indigo-500 text-indigo-300'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            Schema
+            {!accessToken && (
+              <span className="text-[9px] text-amber-600" title="Sign in with Google to use">●</span>
+            )}
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-          {detectedTables.length === 0 ? (
-            <div className="text-center p-6 text-slate-600 text-xs italic">
-              No tables detected yet. Write some SQL with FROM or JOIN clauses.
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {rightTab === 'detected' ? (
+            <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+              {detectedTables.length === 0 ? (
+                <div className="text-center p-6 text-slate-600 text-xs italic">
+                  No tables detected yet. Write some SQL with FROM or JOIN clauses.
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {detectedTables.map((table, i) => (
+                    <div
+                      key={i}
+                      className="group flex items-start justify-between p-2 hover:bg-slate-900 rounded-md transition-colors cursor-pointer"
+                      onClick={() => copyToClipboard(table)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Table className="w-3 h-3 text-slate-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-xs text-slate-300 font-mono break-all leading-tight">{table}</span>
+                      </div>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-indigo-400 transition-all"
+                        title="Copy table name"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="space-y-1">
-              {detectedTables.map((table, i) => (
-                <div
-                  key={i}
-                  className="group flex items-start justify-between p-2 hover:bg-slate-900 rounded-md transition-colors cursor-pointer"
-                  onClick={() => copyToClipboard(table)}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Table className="w-3 h-3 text-slate-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs text-slate-300 font-mono break-all leading-tight">{table}</span>
-                  </div>
-                  <button
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-indigo-400 transition-all"
-                    title="Copy Table Name"
-                  >
-                    <Clipboard className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
+            <div className="flex-1 overflow-hidden flex flex-col pt-2">
+              <SchemaExplorer
+                projectId={bqConfig.projectId}
+                accessToken={accessToken}
+              />
             </div>
           )}
         </div>

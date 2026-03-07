@@ -294,6 +294,7 @@ export default function App() {
             onUpdate={updateStory}
             bqConfig={bqConfig}
             geminiApiKey={geminiApiKey}
+            accessToken={googleUser?.accessToken ?? null}
           />
         ) : activeProjectId && activeProject ? (
           <ProjectOverview
