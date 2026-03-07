@@ -4,7 +4,7 @@ import {
   Table, PanelRightClose, PanelRightOpen, Clipboard, Database,
   Lightbulb, X, RefreshCw,
 } from 'lucide-react';
-import { Story, BqConfig } from '../types';
+import { Story, BqConfig, DataDictionary } from '../types';
 import { QueryCard } from './QueryCard';
 import { SchemaExplorer } from './SchemaExplorer';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -28,6 +28,8 @@ interface ActiveStoryViewProps {
   geminiApiKey: string;
   accessToken: string | null;
   onUpdate: (story: Story) => void;
+  dataDictionary: DataDictionary;
+  onUpdateDictionary: (d: DataDictionary) => void;
 }
 
 function buildInsightsPrompt(story: Story): string {
@@ -64,6 +66,8 @@ export function ActiveStoryView({
   geminiApiKey,
   accessToken,
   onUpdate,
+  dataDictionary,
+  onUpdateDictionary,
 }: ActiveStoryViewProps) {
   const [newQueryMode, setNewQueryMode] = useState(false);
   const [draftQuery, setDraftQuery] = useState('');
@@ -448,6 +452,8 @@ export function ActiveStoryView({
               <SchemaExplorer
                 projectId={bqConfig.projectId}
                 accessToken={accessToken}
+                dataDictionary={dataDictionary}
+                onUpdateDictionary={onUpdateDictionary}
               />
             </div>
           )}

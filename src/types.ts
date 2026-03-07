@@ -50,3 +50,13 @@ export interface PendingDelete {
   label: string;
   restore: () => void;
 }
+
+export interface TableDictionaryEntry {
+  note: string;
+  fields: Record<string, string>; // fieldPath (e.g. "address.street") → note
+}
+
+export interface DataDictionary {
+  // key = "projectId.datasetId.tableId"
+  tables: Record<string, TableDictionaryEntry>;
+}

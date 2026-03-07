@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ChevronRight, Loader, AlertCircle, Search, Table, Columns3, Eye, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronRight, Loader, AlertCircle, Search, Table, Columns3, Eye, RefreshCw, Pencil, X, Check } from 'lucide-react';
 import { listDatasets, listTables, getTableSchema, BqDataset, BqTable, BqField } from '../lib/bigquery';
 import { copyToClipboard } from '../lib/clipboard';
+import { DataDictionary } from '../types';
 
 // ── Type colours ──────────────────────────────────────────────────────────────
 const TYPE_COLOR: Record<string, string> = {
@@ -42,39 +43,161 @@ interface TableNode extends BqTable {
   fields: BqField[]
 }
 
+// ── Inline note editor ────────────────────────────────────────────────────────
+function InlineNote({
+  value,
+  placeholder,
+  multiline = false,
+  onSave,
+}: {
+  value: string
+  placeholder: string
+  multiline?: boolean
+  onSave: (v: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const inputRef = useRef<HTMLTextAreaElement & HTMLInputElement>(null)
+
+  // Sync draft when value changes externally
+  useEffect(() => { if (!editing) setDraft(value) }, [value, editing])
+
+  const commit = () => {
+    onSave(draft.trim())
+    setEditing(false)
+  }
+  const cancel = () => {
+    setDraft(value)
+    setEditing(false)
+  }
+
+  if (editing) {
+    const sharedClass =
+      'w-full bg-slate-900 border border-indigo-500/50 rounded px-1.5 py-0.5 text-[10px] text-slate-300 placeholder-slate-600 outline-none resize-none'
+
+    return (
+      <div className="flex flex-col gap-0.5 mt-0.5 pr-1">
+        {multiline ? (
+          <textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            autoFocus
+            rows={2}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commit() }
+              if (e.key === 'Escape') cancel()
+            }}
+            className={sharedClass}
+            placeholder={placeholder}
+          />
+        ) : (
+          <input
+            ref={inputRef as unknown as React.RefObject<HTMLInputElement>}
+            autoFocus
+            type="text"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commit()
+              if (e.key === 'Escape') cancel()
+            }}
+            className={sharedClass}
+            placeholder={placeholder}
+          />
+        )}
+        <div className="flex gap-1 justify-end">
+          <button onClick={cancel} className="text-slate-500 hover:text-slate-300 transition-colors" title="Cancel (Esc)">
+            <X className="w-3 h-3" />
+          </button>
+          <button onClick={commit} className="text-indigo-400 hover:text-indigo-300 transition-colors" title="Save (Enter)">
+            <Check className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={e => { e.stopPropagation(); setEditing(true) }}
+      className="group/note flex items-start gap-1 cursor-text mt-0.5 pr-1"
+    >
+      {value ? (
+        <span className="text-[10px] text-slate-500 leading-snug flex-1 italic">{value}</span>
+      ) : (
+        <span className="text-[10px] text-slate-700 leading-snug flex-1 italic">{placeholder}</span>
+      )}
+      <Pencil className="w-2.5 h-2.5 text-slate-700 group-hover/note:text-slate-400 flex-shrink-0 mt-0.5 transition-colors" />
+    </div>
+  )
+}
+
 // ── Field tree (recursive) ────────────────────────────────────────────────────
-function FieldRow({ field, depth = 0 }: { field: BqField; depth?: number }) {
+function FieldRow({
+  field,
+  depth = 0,
+  fieldPath,
+  fieldNotes,
+  onSaveFieldNote,
+}: {
+  field: BqField
+  depth?: number
+  fieldPath: string
+  fieldNotes: Record<string, string>
+  onSaveFieldNote: (path: string, note: string) => void
+}) {
   const [open, setOpen] = useState(false)
   const isNested = (field.fields?.length ?? 0) > 0
   const indent = depth * 12
+  const note = fieldNotes[fieldPath] ?? ''
 
   return (
     <>
       <div
-        className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-slate-800/60 rounded cursor-pointer group"
+        className="flex flex-col px-2 py-0.5 hover:bg-slate-800/60 rounded group/field"
         style={{ paddingLeft: `${8 + indent}px` }}
-        onClick={() => {
-          if (isNested) setOpen(o => !o)
-          else copyToClipboard(field.name)
-        }}
-        title={field.description || (isNested ? 'Click to expand' : 'Click to copy')}
       >
-        {isNested ? (
-          <ChevronRight className={`w-3 h-3 text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
-        ) : (
-          <span className="w-3 flex-shrink-0" />
-        )}
-        <Columns3 className="w-2.5 h-2.5 text-slate-600 flex-shrink-0" />
-        <span className="text-[11px] text-slate-300 font-mono truncate flex-1">{field.name}</span>
-        <span className={`text-[9px] font-bold uppercase flex-shrink-0 ${typeColor(field.type)}`}>
-          {field.type}
-        </span>
-        {field.mode === 'REPEATED' && (
-          <span className="text-[9px] text-slate-600 flex-shrink-0">[]</span>
-        )}
+        <div
+          className="flex items-center gap-1.5 cursor-pointer"
+          onClick={() => {
+            if (isNested) setOpen(o => !o)
+            else copyToClipboard(field.name)
+          }}
+          title={field.description || (isNested ? 'Click to expand' : 'Click to copy')}
+        >
+          {isNested ? (
+            <ChevronRight className={`w-3 h-3 text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+          ) : (
+            <span className="w-3 flex-shrink-0" />
+          )}
+          <Columns3 className="w-2.5 h-2.5 text-slate-600 flex-shrink-0" />
+          <span className="text-[11px] text-slate-300 font-mono truncate flex-1">{field.name}</span>
+          <span className={`text-[9px] font-bold uppercase flex-shrink-0 ${typeColor(field.type)}`}>
+            {field.type}
+          </span>
+          {field.mode === 'REPEATED' && (
+            <span className="text-[9px] text-slate-600 flex-shrink-0">[]</span>
+          )}
+        </div>
+        {/* Field-level note (single line) */}
+        <div style={{ paddingLeft: `${12 + (isNested ? 0 : 0)}px` }}>
+          <InlineNote
+            value={note}
+            placeholder="+ add context…"
+            onSave={v => onSaveFieldNote(fieldPath, v)}
+          />
+        </div>
       </div>
       {open && field.fields?.map(f => (
-        <FieldRow key={f.name} field={f} depth={depth + 1} />
+        <FieldRow
+          key={f.name}
+          field={f}
+          depth={depth + 1}
+          fieldPath={`${fieldPath}.${f.name}`}
+          fieldNotes={fieldNotes}
+          onSaveFieldNote={onSaveFieldNote}
+        />
       ))}
     </>
   )
@@ -84,13 +207,54 @@ function FieldRow({ field, depth = 0 }: { field: BqField; depth?: number }) {
 interface SchemaExplorerProps {
   projectId: string
   accessToken: string | null
+  dataDictionary: DataDictionary
+  onUpdateDictionary: (d: DataDictionary) => void
 }
 
-export function SchemaExplorer({ projectId, accessToken }: SchemaExplorerProps) {
+export function SchemaExplorer({ projectId, accessToken, dataDictionary, onUpdateDictionary }: SchemaExplorerProps) {
   const [datasets, setDatasets] = useState<DatasetNode[]>([])
   const [datasetsLoad, setDatasetsLoad] = useState<Load>('idle')
   const [datasetsError, setDatasetsError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+
+  // ── Dictionary helpers ──────────────────────────────────────────────────
+  const tableKey = useCallback(
+    (datasetId: string, tableId: string) => `${projectId}.${datasetId}.${tableId}`,
+    [projectId]
+  )
+
+  const getTableEntry = useCallback(
+    (datasetId: string, tableId: string) =>
+      dataDictionary.tables[tableKey(datasetId, tableId)] ?? { note: '', fields: {} },
+    [dataDictionary, tableKey]
+  )
+
+  const saveTableNote = useCallback(
+    (datasetId: string, tableId: string, note: string) => {
+      const key = tableKey(datasetId, tableId)
+      const existing = dataDictionary.tables[key] ?? { note: '', fields: {} }
+      onUpdateDictionary({
+        ...dataDictionary,
+        tables: { ...dataDictionary.tables, [key]: { ...existing, note } },
+      })
+    },
+    [dataDictionary, onUpdateDictionary, tableKey]
+  )
+
+  const saveFieldNote = useCallback(
+    (datasetId: string, tableId: string, fieldPath: string, note: string) => {
+      const key = tableKey(datasetId, tableId)
+      const existing = dataDictionary.tables[key] ?? { note: '', fields: {} }
+      const fields = note
+        ? { ...existing.fields, [fieldPath]: note }
+        : Object.fromEntries(Object.entries(existing.fields).filter(([k]) => k !== fieldPath))
+      onUpdateDictionary({
+        ...dataDictionary,
+        tables: { ...dataDictionary.tables, [key]: { ...existing, fields } },
+      })
+    },
+    [dataDictionary, onUpdateDictionary, tableKey]
+  )
 
   // ── Load datasets ───────────────────────────────────────────────────────
   const loadDatasets = useCallback(async () => {
@@ -121,7 +285,6 @@ export function SchemaExplorer({ projectId, accessToken }: SchemaExplorerProps) 
       if (d.datasetId !== datasetId) return d
       const willExpand = !d.expanded
       if (willExpand && d.tablesLoad === 'idle') {
-        // Kick off table fetch
         ;(async () => {
           setDatasets(p => p.map(x => x.datasetId === datasetId
             ? { ...x, tablesLoad: 'loading' } : x))
@@ -289,45 +452,67 @@ export function SchemaExplorer({ projectId, accessToken }: SchemaExplorerProps) 
                     <p className="text-[10px] text-red-400 px-2 py-1">{dataset.tablesError}</p>
                   )}
 
-                  {filteredTables.map(table => (
-                    <div key={table.tableId}>
-                      {/* Table row */}
-                      <button
-                        onClick={() => toggleTable(dataset.datasetId, table.tableId)}
-                        className="w-full flex items-center gap-1.5 px-2 py-0.5 hover:bg-slate-800/60 rounded text-left group"
-                        onDoubleClick={() =>
-                          copyToClipboard(`${projectId}.${dataset.datasetId}.${table.tableId}`)
-                        }
-                        title={`Double-click to copy full path`}
-                      >
-                        <ChevronRight
-                          className={`w-3 h-3 text-slate-600 flex-shrink-0 transition-transform ${table.expanded ? 'rotate-90' : ''}`}
-                        />
-                        {tableIcon(table.type)}
-                        <span className="text-[11px] text-slate-400 group-hover:text-slate-200 truncate flex-1 font-mono">
-                          {table.tableId}
-                        </span>
-                        {table.fieldsLoad === 'loading' && (
-                          <Loader className="w-2.5 h-2.5 animate-spin text-slate-500 flex-shrink-0" />
-                        )}
-                      </button>
+                  {filteredTables.map(table => {
+                    const entry = getTableEntry(dataset.datasetId, table.tableId)
 
-                      {/* Fields */}
-                      {table.expanded && (
-                        <div className="ml-2">
-                          {table.fieldsLoad === 'error' && (
-                            <p className="text-[10px] text-red-400 px-2 py-0.5">{table.fieldsError}</p>
+                    return (
+                      <div key={table.tableId}>
+                        {/* Table row */}
+                        <button
+                          onClick={() => toggleTable(dataset.datasetId, table.tableId)}
+                          className="w-full flex items-center gap-1.5 px-2 py-0.5 hover:bg-slate-800/60 rounded text-left group"
+                          onDoubleClick={() =>
+                            copyToClipboard(`${projectId}.${dataset.datasetId}.${table.tableId}`)
+                          }
+                          title={`Double-click to copy full path`}
+                        >
+                          <ChevronRight
+                            className={`w-3 h-3 text-slate-600 flex-shrink-0 transition-transform ${table.expanded ? 'rotate-90' : ''}`}
+                          />
+                          {tableIcon(table.type)}
+                          <span className="text-[11px] text-slate-400 group-hover:text-slate-200 truncate flex-1 font-mono">
+                            {table.tableId}
+                          </span>
+                          {table.fieldsLoad === 'loading' && (
+                            <Loader className="w-2.5 h-2.5 animate-spin text-slate-500 flex-shrink-0" />
                           )}
-                          {table.fields.map(f => (
-                            <FieldRow key={f.name} field={f} />
-                          ))}
-                          {table.fieldsLoad === 'done' && table.fields.length === 0 && (
-                            <p className="text-[10px] text-slate-600 px-3 py-1 italic">No schema available</p>
-                          )}
+                        </button>
+
+                        {/* Table note — always visible when parent dataset is expanded */}
+                        <div className="px-2 pb-0.5" style={{ paddingLeft: '28px' }}>
+                          <InlineNote
+                            value={entry.note}
+                            placeholder="+ describe this table…"
+                            multiline
+                            onSave={v => saveTableNote(dataset.datasetId, table.tableId, v)}
+                          />
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Fields */}
+                        {table.expanded && (
+                          <div className="ml-2">
+                            {table.fieldsLoad === 'error' && (
+                              <p className="text-[10px] text-red-400 px-2 py-0.5">{table.fieldsError}</p>
+                            )}
+                            {table.fields.map(f => (
+                              <FieldRow
+                                key={f.name}
+                                field={f}
+                                fieldPath={f.name}
+                                fieldNotes={entry.fields}
+                                onSaveFieldNote={(path, note) =>
+                                  saveFieldNote(dataset.datasetId, table.tableId, path, note)
+                                }
+                              />
+                            ))}
+                            {table.fieldsLoad === 'done' && table.fields.length === 0 && (
+                              <p className="text-[10px] text-slate-600 px-3 py-1 italic">No schema available</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
 
                   {dataset.tablesLoad === 'done' && dataset.tables.length === 0 && (
                     <p className="text-[10px] text-slate-600 px-3 py-1 italic">No tables</p>

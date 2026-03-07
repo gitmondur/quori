@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronRight, Database, PlusSquare } from 'lucide-react';
 
-import { Project, Story, BqConfig, OAuthConfig, PendingDelete } from './types';
+import { Project, Story, BqConfig, OAuthConfig, PendingDelete, DataDictionary } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
 import { useGoogleAuth } from './hooks/useGoogleAuth';
 
@@ -31,6 +31,7 @@ export default function App() {
     clientId: '',
     clientSecret: '',
   });
+  const [dataDictionary, setDataDictionary] = usePersistedState<DataDictionary>('quori_data_dictionary', { tables: {} });
 
   // ── Google Auth ───────────────────────────────────────────────────────────
   const { user: googleUser, signIn, signOut } = useGoogleAuth(oauthConfig);
@@ -295,6 +296,8 @@ export default function App() {
             bqConfig={bqConfig}
             geminiApiKey={geminiApiKey}
             accessToken={googleUser?.accessToken ?? null}
+            dataDictionary={dataDictionary}
+            onUpdateDictionary={setDataDictionary}
           />
         ) : activeProjectId && activeProject ? (
           <ProjectOverview
