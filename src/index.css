@@ -1,19 +1,79 @@
 @import "tailwindcss";
 
-/* Custom Scrollbar */
+/* ── Scrollbar (dark default) ─────────────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #0f172a; 
+  background: #0f172a;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155; 
+  background: #334155;
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569; 
+  background: #475569;
 }
 
+/* ── Light mode scrollbar ─────────────────────────────────────────────────── */
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-track {
+  background: #D8D8D8;
+}
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #A8A4C0;
+}
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #8880B0;
+}
 
+/* ── Light mode — override Tailwind's slate palette CSS variables ─────────── */
+/*
+  Tailwind v4 exposes every color as a CSS custom property (--color-slate-N).
+  Overriding them here flips the whole UI without touching component markup.
+
+  Mapping philosophy:
+    Dark-mode role         Light-mode value
+    ─────────────────────  ──────────────────────
+    slate-950  deepest bg  #EAEAEA  (platinum)
+    slate-900  surface bg  #F3F3F3
+    slate-800  hover / secondary surface  #E2E0EC
+    slate-700  stronger border  #C8C4D8
+    slate-600  very muted text  #9890C0
+    slate-500  secondary text   #6E66A0
+    slate-400  muted text/icon  #4A4282
+    slate-300  body text        #2A205A
+    slate-200  primary text     #110B3E
+    slate-100  high-emphasis    #0A0720
+*/
+[data-theme="light"] {
+  --color-slate-950: #EAEAEA;
+  --color-slate-900: #F3F3F3;
+  --color-slate-800: #E2E0EC;
+  --color-slate-700: #C8C4D8;
+  --color-slate-600: #9890C0;
+  --color-slate-500: #6E66A0;
+  --color-slate-400: #4A4282;
+  --color-slate-300: #2A205A;
+  --color-slate-200: #110B3E;
+  --color-slate-100: #0A0720;
+  --color-slate-50:  #FFFFFF;
+}
+
+/* text-white and hover:text-white on light backgrounds */
+[data-theme="light"] .text-white {
+  color: #110B3E;
+}
+[data-theme="light"] .hover\:text-white:hover {
+  color: #110B3E;
+}
+
+/* Code blocks — keep them slightly tinted so they stand out from the surface */
+[data-theme="light"] pre {
+  background-color: #E4E2F0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Indigo active-state backgrounds look great in light mode as soft lavender —
+   no override needed. Status pill colours (amber/emerald/blue) also carry over. */

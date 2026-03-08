@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Database, Search, Plus, ChevronRight, Folder, FolderOpen,
-  Pencil, Trash2, Settings, LogIn,
+  Pencil, Trash2, Settings, LogIn, Sun, Moon,
 } from 'lucide-react';
 import { Project, Story, GoogleUser } from '../types';
 
@@ -23,6 +23,8 @@ interface SidebarProps {
   onRenameStory: (storyId: string, newTitle: string) => void;
   onOpenSettings: () => void;
   googleUser: GoogleUser | null;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
 }
 
 export function Sidebar({
@@ -43,6 +45,8 @@ export function Sidebar({
   onRenameStory,
   onOpenSettings,
   googleUser,
+  theme,
+  onToggleTheme,
 }: SidebarProps) {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -74,12 +78,21 @@ export function Sidebar({
             <Database className="w-6 h-6" />
             <span>Quori</span>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="text-slate-500 hover:text-white transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onToggleTheme}
+              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onOpenSettings}
+              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <button
           onClick={onAddProject}
@@ -101,7 +114,7 @@ export function Sidebar({
 
       {/* Project list */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="px-2 py-2 space-y-1">
+        <div className="px-2 py-3 space-y-2">
           {projects.map(project => {
             const projectStories = stories.filter(
               s =>
@@ -114,10 +127,10 @@ export function Sidebar({
             const isActiveProject = activeProjectId === project.id && !activeStoryId;
 
             return (
-              <div key={project.id} className="mb-2">
+              <div key={project.id} className="mb-4">
                 {/* Project row */}
                 <div
-                  className={`flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer group transition-colors ${
+                  className={`flex items-center justify-between px-2 py-2 rounded-md cursor-pointer group transition-colors ${
                     isActiveProject
                       ? 'bg-indigo-900/30 text-indigo-300'
                       : 'hover:bg-slate-900 text-slate-400'
@@ -173,7 +186,7 @@ export function Sidebar({
 
                 {/* Stories */}
                 {project.isExpanded && (
-                  <div className="pl-3 mt-1 space-y-0.5 border-l border-slate-800 ml-3.5">
+                  <div className="pl-3 mt-1 space-y-1 border-l border-slate-800 ml-3.5">
                     {projectStories.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-slate-600 italic">No queries yet</div>
                     ) : (
@@ -181,7 +194,7 @@ export function Sidebar({
                         <div
                           key={story.id}
                           onClick={() => onStoryClick(story.id, project.id)}
-                          className={`group relative pl-3 pr-2 py-2 rounded-r-md cursor-pointer transition-all border-l-2 ${
+                          className={`group relative pl-3 pr-2 py-2.5 rounded-r-md cursor-pointer transition-all border-l-2 ${
                             activeStoryId === story.id
                               ? 'bg-indigo-900/10 border-indigo-500'
                               : 'border-transparent hover:bg-slate-900'

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Code2, ChevronDown, GitBranch, Sparkles, Loader,
-  Copy, Trash2, Wand2, Database,
+  Copy, Trash2, Wand2,
 } from 'lucide-react';
 import { Version } from '../types';
 import { SQLHighlighter } from './SQLHighlighter';
@@ -127,11 +127,6 @@ export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelet
               >
                 {copied ? 'Copied!' : <><Copy className="w-3 h-3" /> Copy</>}
               </button>
-            </div>
-            <div className="bg-slate-900/50 p-3 flex justify-between items-center text-xs text-slate-500 border-t border-slate-800">
-              <span className="flex items-center gap-1">
-                <Database className="w-3 h-3 text-blue-500" /> ID: {version.id}
-              </span>
             </div>
           </div>
         )}

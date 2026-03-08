@@ -180,15 +180,22 @@ export function ActiveStoryView({
     <div className="flex h-full">
       {/* ── Main timeline ───────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="p-6 pb-2 border-b border-slate-800 bg-slate-950/30">
-          <div className="flex items-center justify-between mb-4 pl-8">
+        {/* Header — row 1: title */}
+        <div className="px-6 pt-6 pb-4 border-b border-slate-800 bg-slate-950/30">
+          <div className="pl-8 mb-3">
             <input
               type="text"
               value={story.title}
               onChange={e => onUpdate({ ...story, title: e.target.value })}
               className="bg-transparent text-2xl font-bold text-slate-100 focus:outline-none focus:border-b border-indigo-500 w-full"
             />
+          </div>
+          {/* Header — row 2: meta + actions */}
+          <div className="pl-8 flex items-center justify-between">
+            <div className="flex gap-4 text-sm text-slate-500">
+              <span>{story.versions.length} iterations</span>
+              <span>Last edited {new Date(story.lastModified).toLocaleString()}</span>
+            </div>
             <div className="flex gap-2 items-center">
               <button
                 onClick={handleStatusClick}
@@ -197,7 +204,6 @@ export function ActiveStoryView({
               >
                 {story.status}
               </button>
-              {/* Generate Insights */}
               <button
                 onClick={handleGenerateInsights}
                 disabled={isInsighting || !geminiApiKey || story.versions.length === 0}
@@ -220,7 +226,7 @@ export function ActiveStoryView({
                 className={`p-1.5 rounded-md transition-colors ${
                   isRightPanelOpen
                     ? 'bg-indigo-900/50 text-indigo-300'
-                    : 'text-slate-500 hover:text-white hover:bg-slate-800'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
                 }`}
                 title="Toggle side panel"
               >
@@ -229,10 +235,6 @@ export function ActiveStoryView({
                   : <PanelRightOpen className="w-5 h-5" />}
               </button>
             </div>
-          </div>
-          <div className="pl-8 flex gap-4 text-sm text-slate-500">
-            <p>{story.versions.length} iterations</p>
-            <p>Last edited {new Date(story.lastModified).toLocaleString()}</p>
           </div>
         </div>
 

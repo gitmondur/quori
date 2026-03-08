@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ChevronRight, Database, PlusSquare } from 'lucide-react';
 
 import { Project, Story, BqConfig, OAuthConfig, PendingDelete, DataDictionary } from './types';
@@ -32,6 +32,13 @@ export default function App() {
     clientSecret: '',
   });
   const [dataDictionary, setDataDictionary] = usePersistedState<DataDictionary>('quori_data_dictionary', { tables: {} });
+  const [theme, setTheme] = usePersistedState<'dark' | 'light'>('quori_theme', 'dark');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  const handleToggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
   // ── Google Auth ───────────────────────────────────────────────────────────
   const { user: googleUser, signIn, signOut } = useGoogleAuth(oauthConfig);
@@ -277,6 +284,8 @@ export default function App() {
           onRenameStory={handleRenameStory}
           onOpenSettings={() => setShowConfig(true)}
           googleUser={googleUser}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
       </div>
 
