@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import {
   Code2, Plus, Save, Loader, Sparkles, ExternalLink,
   Table, PanelRightClose, PanelRightOpen, Clipboard, Database,
-  Lightbulb, X, RefreshCw,
+  Lightbulb, X, RefreshCw, Share2,
 } from 'lucide-react';
 import { Story, BqConfig, DataDictionary } from '../types';
 import { QueryCard } from './QueryCard';
 import { SchemaExplorer } from './SchemaExplorer';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ConfirmDeleteModal } from './modals/ConfirmDeleteModal';
+import { ShareStoryModal } from './modals/ShareStoryModal';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { extractTables } from '../lib/extractTables';
 import { callGemini } from '../lib/gemini';
@@ -77,6 +78,7 @@ export function ActiveStoryView({
   const [isRightPanelOpen, setIsRightPanelOpen] = usePersistedState('quori_right_panel_open', true);
   const [rightTab, setRightTab] = usePersistedState<RightTab>('quori_right_tab', 'detected');
   const [versionToDelete, setVersionToDelete] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Insights state
   const [insights, setInsights] = useState<string | null>(null);
@@ -220,6 +222,14 @@ export function ActiveStoryView({
                   ? <Loader className="w-3.5 h-3.5 animate-spin" />
                   : <Lightbulb className="w-3.5 h-3.5" />}
                 {isInsighting ? 'Analysing…' : 'Insights'}
+              </button>
+              <button
+                onClick={() => setShowShareModal(true)}
+                disabled={story.versions.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Share this story"
+              >
+                <Share2 className="w-3.5 h-3.5" /> Share
               </button>
               <button
                 onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
@@ -470,6 +480,16 @@ export function ActiveStoryView({
           confirmLabel="Delete"
           onConfirm={confirmDeleteVersion}
           onCancel={() => setVersionToDelete(null)}
+        />
+      )}
+
+      {/* Share Story Modal */}
+      {showShareModal && (
+        <ShareStoryModal
+          story={story}
+          detectedTables={detectedTables}
+          insights={insights}
+          onClose={() => setShowShareModal(false)}
         />
       )}
     </div>
