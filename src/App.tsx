@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { ChevronRight, Database, PlusSquare } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 import { Project, Story, BqConfig, OAuthConfig, PendingDelete, DataDictionary } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
@@ -8,11 +8,11 @@ import { useGoogleAuth } from './hooks/useGoogleAuth';
 import { Sidebar } from './components/Sidebar';
 import { ProjectOverview } from './components/ProjectOverview';
 import { ActiveStoryView } from './components/ActiveStoryView';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { UndoToast } from './components/UndoToast';
 
 import { ConfirmDeleteModal } from './components/modals/ConfirmDeleteModal';
 import { ProjectNameModal } from './components/modals/ProjectNameModal';
-import { ApiKeyModal } from './components/modals/ApiKeyModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 
 export default function App() {
@@ -60,7 +60,6 @@ export default function App() {
   // ── UI state ─────────────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfig, setShowConfig] = useState(false);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(!localStorage.getItem('quori_gemini_api_key'));
 
   // Project modals
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -90,12 +89,6 @@ export default function App() {
         : [],
     [activeProject, stories],
   );
-
-  // ── Gemini API key ────────────────────────────────────────────────────────
-  const handleSaveApiKey = (key: string) => {
-    setGeminiApiKey(key);
-    setShowApiKeyModal(false);
-  };
 
   // ── Project actions ───────────────────────────────────────────────────────
   const handleProjectClick = (projectId: string) => {
@@ -286,6 +279,7 @@ export default function App() {
           googleUser={googleUser}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          hasApiKey={!!geminiApiKey}
         />
       </div>
 
@@ -319,21 +313,13 @@ export default function App() {
             onReorderStories={handleReorderStories}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-600">
-            <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mb-6 border border-slate-800">
-              <Database className="w-10 h-10 text-indigo-500/50" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-300 mb-2">Welcome to Quori</h2>
-            <p className="text-slate-500 max-w-sm text-center">
-              Select a project from the sidebar to view its queries or create a new one.
-            </p>
-            <button
-              onClick={() => { setProjectModal({ mode: 'create' }); setProjectModalName(''); }}
-              className="mt-6 text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center gap-2"
-            >
-              <PlusSquare className="w-4 h-4" /> Create your first Project
-            </button>
-          </div>
+          <WelcomeScreen
+            hasApiKey={!!geminiApiKey}
+            hasGoogleUser={!!googleUser}
+            projectCount={projects.length}
+            onCreateProject={() => { setProjectModal({ mode: 'create' }); setProjectModalName(''); }}
+            onOpenSettings={() => setShowConfig(true)}
+          />
         )}
       </div>
 
@@ -363,10 +349,6 @@ export default function App() {
           onConfirm={confirmProjectModal}
           onCancel={() => setProjectModal(null)}
         />
-      )}
-
-      {showApiKeyModal && (
-        <ApiKeyModal onSave={handleSaveApiKey} onDismiss={() => setShowApiKeyModal(false)} />
       )}
 
       {showConfig && (

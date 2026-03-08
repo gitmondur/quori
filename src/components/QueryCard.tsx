@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Version } from '../types';
 import { SQLHighlighter } from './SQLHighlighter';
+import { Tooltip } from './Tooltip';
 import { callGemini } from '../lib/gemini';
 import { copyToClipboard } from '../lib/clipboard';
 
@@ -32,10 +33,6 @@ export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelet
   const handleExplain = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (explanation) { setExplanation(null); return; }
-    if (!geminiApiKey) {
-      alert('Please configure your Gemini API Key in Settings to use Smart Explain.');
-      return;
-    }
     setIsExplaining(true);
     setIsExpanded(true);
     const result = await callGemini(`Explain this SQL briefly: ${version.query}`, geminiApiKey);
@@ -82,15 +79,17 @@ export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelet
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : explanation ? 'Hide explanation' : 'Explain this query with AI'}>
             <button
               onClick={handleExplain}
+              disabled={!geminiApiKey || isExplaining}
               className={`p-2 rounded hover:bg-slate-800 transition-colors ${
                 explanation ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-indigo-400'
-              } ${!geminiApiKey ? 'opacity-50' : ''}`}
-              title={!geminiApiKey ? 'Requires API Key' : 'Explain with AI'}
+              } ${!geminiApiKey ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isExplaining ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             </button>
+            </Tooltip>
             <button
               onClick={e => { e.stopPropagation(); onFork(); }}
               className="p-2 hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-400 transition-colors"

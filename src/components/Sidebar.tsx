@@ -25,6 +25,7 @@ interface SidebarProps {
   googleUser: GoogleUser | null;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  hasApiKey: boolean;
 }
 
 export function Sidebar({
@@ -47,6 +48,7 @@ export function Sidebar({
   googleUser,
   theme,
   onToggleTheme,
+  hasApiKey,
 }: SidebarProps) {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -86,12 +88,18 @@ export function Sidebar({
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button
-              onClick={onOpenSettings}
-              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={onOpenSettings}
+                className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800"
+                title={!hasApiKey ? 'Gemini API Key not configured' : 'Settings'}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              {!hasApiKey && (
+                <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-amber-500 rounded-full pointer-events-none" />
+              )}
+            </div>
           </div>
         </div>
         <button

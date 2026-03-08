@@ -10,6 +10,7 @@ import { SchemaExplorer } from './SchemaExplorer';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ConfirmDeleteModal } from './modals/ConfirmDeleteModal';
 import { ShareStoryModal } from './modals/ShareStoryModal';
+import { Tooltip } from './Tooltip';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { extractTables } from '../lib/extractTables';
 import { callGemini } from '../lib/gemini';
@@ -145,14 +146,6 @@ export function ActiveStoryView({
   };
 
   const handleAIGenerate = async () => {
-    if (!geminiApiKey) {
-      alert('Please configure your Gemini API Key in Settings to use AI Draft.');
-      return;
-    }
-    if (!draftNote.trim()) {
-      alert('Please enter a note/description first.');
-      return;
-    }
     setIsGenerating(true);
     const lastVersion = story.versions[story.versions.length - 1];
     const previousQuery = lastVersion ? lastVersion.query : 'None (New Query)';
@@ -163,14 +156,6 @@ export function ActiveStoryView({
   };
 
   const handleGenerateInsights = async () => {
-    if (!geminiApiKey) {
-      alert('Please configure your Gemini API Key in Settings to use Generate Insights.');
-      return;
-    }
-    if (story.versions.length === 0) {
-      alert('Add at least one query version before generating insights.');
-      return;
-    }
     setIsInsighting(true);
     setInsights(null);
     const result = await callGemini(buildInsightsPrompt(story), geminiApiKey);
@@ -206,6 +191,7 @@ export function ActiveStoryView({
               >
                 {story.status}
               </button>
+              <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : 'Generate an AI summary of this investigation'}>
               <button
                 onClick={handleGenerateInsights}
                 disabled={isInsighting || !geminiApiKey || story.versions.length === 0}
@@ -216,13 +202,13 @@ export function ActiveStoryView({
                     ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-amber-300'
                     : 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed'
                 }`}
-                title={!geminiApiKey ? 'Requires Gemini API Key' : 'Generate AI insights for this story'}
               >
                 {isInsighting
                   ? <Loader className="w-3.5 h-3.5 animate-spin" />
                   : <Lightbulb className="w-3.5 h-3.5" />}
                 {isInsighting ? 'Analysing…' : 'Insights'}
               </button>
+              </Tooltip>
               <button
                 onClick={() => setShowShareModal(true)}
                 disabled={story.versions.length === 0}
@@ -339,19 +325,20 @@ export function ActiveStoryView({
                           onChange={e => setDraftNote(e.target.value)}
                           autoFocus
                         />
+                        <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : 'Generate SQL from your description'}>
                         <button
                           onClick={handleAIGenerate}
-                          disabled={isGenerating || !draftNote}
+                          disabled={isGenerating || !draftNote || !geminiApiKey}
                           className={`flex items-center gap-2 px-3 py-2 text-white rounded-lg text-xs font-medium transition-all ${
                             !geminiApiKey
                               ? 'bg-slate-700 opacity-50 cursor-not-allowed'
                               : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500'
                           }`}
-                          title={!geminiApiKey ? 'Requires API Key' : 'Generate with AI'}
                         >
                           {isGenerating ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                           AI Draft
                         </button>
+                        </Tooltip>
                       </div>
                     </div>
                     <textarea
