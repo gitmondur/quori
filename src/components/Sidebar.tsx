@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Database, Search, Plus, ChevronRight, Folder, FolderOpen,
+  Search, Plus, ChevronRight, Folder, FolderOpen,
   Pencil, Trash2, Settings, LogIn, Sun, Moon,
 } from 'lucide-react';
+import { Logo } from './Logo';
 import { Project, Story, GoogleUser } from '../types';
 
 interface SidebarProps {
@@ -77,7 +78,7 @@ export function Sidebar({
       <div className="p-4 border-b border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-indigo-400 font-bold text-lg">
-            <Database className="w-6 h-6" />
+            <Logo size={28} />
             <span>Quori</span>
           </div>
           <div className="flex items-center gap-1">

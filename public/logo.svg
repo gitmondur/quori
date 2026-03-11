@@ -1,0 +1,14 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Q ring -->
+  <circle cx="43" cy="42" r="25" fill="none" stroke="#6366f1" stroke-width="12" stroke-linecap="round"/>
+  <!-- SQL tail badge -->
+  <g transform="translate(72,66) rotate(-35)">
+    <rect x="-18" y="-7" width="36" height="14" rx="4" fill="#3730a3"/>
+    <rect x="-18" y="-7" width="4"  height="14" rx="2" fill="#6366f1"/>
+    <text x="2" y="1"
+      font-family="'Courier New', Courier, monospace"
+      font-size="7" font-weight="bold"
+      fill="#c7d2fe"
+      text-anchor="middle" dominant-baseline="middle" letter-spacing="0.8">SQL</text>
+  </g>
+</svg>
