@@ -5,8 +5,6 @@ import { BqConfig, OAuthConfig, GoogleUser } from '../../types';
 interface SettingsModalProps {
   bqConfig: BqConfig;
   onBqConfigChange: (config: BqConfig) => void;
-  geminiApiKey: string;
-  onGeminiApiKeyChange: (key: string) => void;
   oauthConfig: OAuthConfig;
   onOAuthConfigChange: (config: OAuthConfig) => void;
   googleUser: GoogleUser | null;
@@ -22,8 +20,6 @@ interface SettingsModalProps {
 export function SettingsModal({
   bqConfig,
   onBqConfigChange,
-  geminiApiKey,
-  onGeminiApiKeyChange,
   oauthConfig,
   onOAuthConfigChange,
   googleUser,
@@ -59,23 +55,9 @@ export function SettingsModal({
             />
           </div>
 
-          {/* Gemini */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Gemini API Key
-            </label>
-            <input
-              type="password"
-              value={geminiApiKey}
-              onChange={e => onGeminiApiKeyChange(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-              placeholder="Optional"
-            />
-          </div>
-
           {/* Google OAuth */}
           <div className="pt-3 border-t border-slate-800">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-medium text-slate-400">Google Account</p>
               <a
                 href="https://console.cloud.google.com/apis/credentials"
@@ -87,6 +69,10 @@ export function SettingsModal({
                 GCP Console <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
+            <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+              Sign in to unlock BigQuery schema browsing and Gemini AI features via Vertex AI.
+              Ensure the <strong className="text-slate-400">Vertex AI API</strong> is enabled in your GCP project.
+            </p>
 
             {googleUser ? (
               <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-lg border border-slate-800">

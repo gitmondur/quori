@@ -2,7 +2,6 @@ import { GitBranch, Sparkles, Share2, Check } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface WelcomeScreenProps {
-  hasApiKey: boolean;
   hasGoogleUser: boolean;
   projectCount: number;
   onCreateProject: () => void;
@@ -10,7 +9,6 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({
-  hasApiKey,
   hasGoogleUser,
   projectCount,
   onCreateProject,
@@ -28,17 +26,8 @@ export function WelcomeScreen({
     },
     {
       number: 2,
-      title: 'Configure Gemini AI',
-      description: 'Unlock AI-powered query drafting, auto-naming, and investigation insights.',
-      done: hasApiKey,
-      actionLabel: 'Open Settings',
-      action: onOpenSettings,
-      optional: true,
-    },
-    {
-      number: 3,
       title: 'Connect Google Account',
-      description: 'Browse your BigQuery schema live and run authenticated queries.',
+      description: 'Unlocks BigQuery schema browsing and Gemini AI features via Vertex AI — no extra API key needed.',
       done: hasGoogleUser,
       actionLabel: 'Open Settings',
       action: onOpenSettings,
