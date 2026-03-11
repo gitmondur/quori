@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Database, Search, Plus, ChevronRight, Folder, FolderOpen,
+  Search, Plus, ChevronRight, Folder, FolderOpen,
   Pencil, Trash2, Settings, LogIn, Sun, Moon,
 } from 'lucide-react';
+import { Logo } from './Logo';
 import { Project, Story, GoogleUser } from '../types';
 
 interface SidebarProps {
@@ -25,7 +26,7 @@ interface SidebarProps {
   googleUser: GoogleUser | null;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  hasApiKey: boolean;
+  hasAiAccess: boolean;
 }
 
 export function Sidebar({
@@ -48,7 +49,7 @@ export function Sidebar({
   googleUser,
   theme,
   onToggleTheme,
-  hasApiKey,
+  hasAiAccess,
 }: SidebarProps) {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -77,7 +78,7 @@ export function Sidebar({
       <div className="p-4 border-b border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-indigo-400 font-bold text-lg">
-            <Database className="w-6 h-6" />
+            <Logo size={28} />
             <span>Quori</span>
           </div>
           <div className="flex items-center gap-1">
@@ -92,11 +93,11 @@ export function Sidebar({
               <button
                 onClick={onOpenSettings}
                 className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800"
-                title={!hasApiKey ? 'Gemini API Key not configured' : 'Settings'}
+                title={!hasAiAccess ? 'Sign in with Google to unlock AI features' : 'Settings'}
               >
                 <Settings className="w-4 h-4" />
               </button>
-              {!hasApiKey && (
+              {!hasAiAccess && (
                 <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-amber-500 rounded-full pointer-events-none" />
               )}
             </div>

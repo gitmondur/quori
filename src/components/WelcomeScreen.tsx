@@ -1,7 +1,7 @@
-import { Database, GitBranch, Sparkles, Share2, Check } from 'lucide-react';
+import { GitBranch, Sparkles, Share2, Check } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface WelcomeScreenProps {
-  hasApiKey: boolean;
   hasGoogleUser: boolean;
   projectCount: number;
   onCreateProject: () => void;
@@ -9,7 +9,6 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({
-  hasApiKey,
   hasGoogleUser,
   projectCount,
   onCreateProject,
@@ -27,17 +26,8 @@ export function WelcomeScreen({
     },
     {
       number: 2,
-      title: 'Configure Gemini AI',
-      description: 'Unlock AI-powered query drafting, auto-naming, and investigation insights.',
-      done: hasApiKey,
-      actionLabel: 'Open Settings',
-      action: onOpenSettings,
-      optional: true,
-    },
-    {
-      number: 3,
       title: 'Connect Google Account',
-      description: 'Browse your BigQuery schema live and run authenticated queries.',
+      description: 'Unlocks BigQuery schema browsing and Gemini AI features via Vertex AI — no extra API key needed.',
       done: hasGoogleUser,
       actionLabel: 'Open Settings',
       action: onOpenSettings,
@@ -67,8 +57,8 @@ export function WelcomeScreen({
     <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto custom-scrollbar">
       {/* Logo */}
       <div className="flex flex-col items-center mb-10 mt-4">
-        <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-4 border border-indigo-500/20">
-          <Database className="w-8 h-8 text-indigo-400" />
+        <div className="w-20 h-20 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-4 border border-indigo-500/20">
+          <Logo size={52} />
         </div>
         <h1 className="text-2xl font-bold text-slate-200">Welcome to Quori</h1>
         <p className="text-slate-500 mt-1 text-sm text-center max-w-xs">

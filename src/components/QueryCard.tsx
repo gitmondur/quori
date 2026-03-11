@@ -13,12 +13,13 @@ interface QueryCardProps {
   version: Version;
   index: number;
   total: number;
-  geminiApiKey: string;
+  accessToken: string | null;
+  projectId: string;
   onFork: () => void;
   onDelete: () => void;
 }
 
-export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelete }: QueryCardProps) {
+export function QueryCard({ version, index, total, accessToken, projectId, onFork, onDelete }: QueryCardProps) {
   const [isExpanded, setIsExpanded] = useState(index === total - 1);
   const [copied, setCopied] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelet
     if (explanation) { setExplanation(null); return; }
     setIsExplaining(true);
     setIsExpanded(true);
-    const result = await callGemini(`Explain this SQL briefly: ${version.query}`, geminiApiKey);
+    const result = await callGemini(`Explain this SQL briefly: ${version.query}`, accessToken ?? '', projectId);
     setExplanation(result);
     setIsExplaining(false);
   };
@@ -79,13 +80,13 @@ export function QueryCard({ version, index, total, geminiApiKey, onFork, onDelet
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : explanation ? 'Hide explanation' : 'Explain this query with AI'}>
+            <Tooltip text={!accessToken ? 'Sign in with Google to unlock AI features' : explanation ? 'Hide explanation' : 'Explain this query with AI'}>
             <button
               onClick={handleExplain}
-              disabled={!geminiApiKey || isExplaining}
+              disabled={!accessToken || isExplaining}
               className={`p-2 rounded hover:bg-slate-800 transition-colors ${
                 explanation ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-indigo-400'
-              } ${!geminiApiKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${!accessToken ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isExplaining ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             </button>

@@ -1,19 +1,38 @@
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent';
+// Calls Gemini via Vertex AI using the user's Google OAuth access token.
+// No separate API key needed — sign-in with Google is sufficient.
+// Requires the Vertex AI API to be enabled in the GCP project:
+//   https://console.cloud.google.com/apis/library/aiplatform.googleapis.com
 
-export async function callGemini(prompt: string, apiKey: string): Promise<string> {
-  if (!apiKey) return 'Error: API Key is missing.';
+const VERTEX_REGION = 'us-central1';
+const MODEL = 'gemini-2.0-flash-001';
 
-  const payload = { contents: [{ parts: [{ text: prompt }] }] };
+function vertexUrl(projectId: string) {
+  return (
+    `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/` +
+    `${projectId}/locations/${VERTEX_REGION}/publishers/google/models/${MODEL}:generateContent`
+  );
+}
+
+export async function callGemini(
+  prompt: string,
+  accessToken: string,
+  projectId: string,
+): Promise<string> {
+  if (!accessToken) return 'Error: Not signed in to Google.';
+  if (!projectId) return 'Error: No GCP Project ID — set one in Settings.';
+
+  const payload = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  };
   const delays = [1000, 2000, 4000, 8000, 16000];
 
   for (let i = 0; i <= delays.length; i++) {
     try {
-      const response = await fetch(GEMINI_URL, {
+      const response = await fetch(vertexUrl(projectId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });
@@ -23,6 +42,15 @@ export async function callGemini(prompt: string, apiKey: string): Promise<string
           await new Promise(r => setTimeout(r, delays[i]));
           continue;
         }
+        if (response.status === 401) {
+          return 'Error: Session expired — please sign out and sign in again.';
+        }
+        if (response.status === 403) {
+          return (
+            `Error: Vertex AI is not enabled for project "${projectId}". ` +
+            `Enable it at console.cloud.google.com/apis/library/aiplatform.googleapis.com`
+          );
+        }
         throw new Error(`API Error: ${response.status}`);
       }
 
@@ -30,7 +58,7 @@ export async function callGemini(prompt: string, apiKey: string): Promise<string
       return data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No response generated.';
     } catch (error) {
       if (i === delays.length) {
-        console.error('Gemini API failed after retries:', error);
+        console.error('Vertex AI call failed after retries:', error);
         return 'Error: Could not reach the AI service.';
       }
       await new Promise(r => setTimeout(r, delays[i]));

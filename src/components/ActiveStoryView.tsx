@@ -27,7 +27,6 @@ type RightTab = 'detected' | 'schema';
 interface ActiveStoryViewProps {
   story: Story;
   bqConfig: BqConfig;
-  geminiApiKey: string;
   accessToken: string | null;
   onUpdate: (story: Story) => void;
   dataDictionary: DataDictionary;
@@ -65,12 +64,12 @@ Be specific, practical, and brief. Use **bold** for key terms.`
 export function ActiveStoryView({
   story,
   bqConfig,
-  geminiApiKey,
   accessToken,
   onUpdate,
   dataDictionary,
   onUpdateDictionary,
 }: ActiveStoryViewProps) {
+  const projectId = bqConfig.projectId;
   const [newQueryMode, setNewQueryMode] = useState(false);
   const [draftQuery, setDraftQuery] = useState('');
   const [draftNote, setDraftNote] = useState('');
@@ -105,12 +104,12 @@ export function ActiveStoryView({
     let finalNote = draftNote;
     setIsSaving(true);
 
-    if (!finalNote.trim() && geminiApiKey) {
+    if (!finalNote.trim() && accessToken && projectId) {
       try {
         const lastVersion = story.versions[story.versions.length - 1];
         const previousQuery = lastVersion ? lastVersion.query : '';
         const prompt = `Summarize the changes in the following SQL query compared to the previous version in less than 10 words. Previous: "${previousQuery}". Current: "${draftQuery}". Just the summary.`;
-        finalNote = await callGemini(prompt, geminiApiKey);
+        finalNote = await callGemini(prompt, accessToken, projectId);
       } catch {
         finalNote = 'Auto-saved version';
       }
@@ -150,7 +149,7 @@ export function ActiveStoryView({
     const lastVersion = story.versions[story.versions.length - 1];
     const previousQuery = lastVersion ? lastVersion.query : 'None (New Query)';
     const prompt = `You are an expert BigQuery SQL assistant. User Request: "${draftNote}". Previous Query: ${previousQuery}. Task: Generate updated SQL. Return ONLY raw SQL.`;
-    const result = await callGemini(prompt, geminiApiKey);
+    const result = await callGemini(prompt, accessToken ?? '', projectId);
     setDraftQuery(result.replace(/```sql/g, '').replace(/```/g, '').trim());
     setIsGenerating(false);
   };
@@ -158,7 +157,7 @@ export function ActiveStoryView({
   const handleGenerateInsights = async () => {
     setIsInsighting(true);
     setInsights(null);
-    const result = await callGemini(buildInsightsPrompt(story), geminiApiKey);
+    const result = await callGemini(buildInsightsPrompt(story), accessToken ?? '', projectId);
     setInsights(result);
     setIsInsighting(false);
   };
@@ -191,14 +190,14 @@ export function ActiveStoryView({
               >
                 {story.status}
               </button>
-              <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : 'Generate an AI summary of this investigation'}>
+              <Tooltip text={!accessToken ? 'Sign in with Google to unlock AI features' : 'Generate an AI summary of this investigation'}>
               <button
                 onClick={handleGenerateInsights}
-                disabled={isInsighting || !geminiApiKey || story.versions.length === 0}
+                disabled={isInsighting || !accessToken || story.versions.length === 0}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                   insights
                     ? 'bg-amber-900/30 text-amber-300 border-amber-700 hover:bg-amber-900/50'
-                    : geminiApiKey
+                    : accessToken
                     ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-amber-300'
                     : 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed'
                 }`}
@@ -280,7 +279,8 @@ export function ActiveStoryView({
                 version={version}
                 index={idx}
                 total={story.versions.length}
-                geminiApiKey={geminiApiKey}
+                accessToken={accessToken}
+                projectId={projectId}
                 onFork={() => { setDraftQuery(version.query); setNewQueryMode(true); }}
                 onDelete={() => setVersionToDelete(version.id)}
               />
@@ -325,12 +325,12 @@ export function ActiveStoryView({
                           onChange={e => setDraftNote(e.target.value)}
                           autoFocus
                         />
-                        <Tooltip text={!geminiApiKey ? 'Add Gemini API Key in Settings to unlock' : 'Generate SQL from your description'}>
+                        <Tooltip text={!accessToken ? 'Sign in with Google to unlock AI features' : 'Generate SQL from your description'}>
                         <button
                           onClick={handleAIGenerate}
-                          disabled={isGenerating || !draftNote || !geminiApiKey}
+                          disabled={isGenerating || !draftNote || !accessToken}
                           className={`flex items-center gap-2 px-3 py-2 text-white rounded-lg text-xs font-medium transition-all ${
-                            !geminiApiKey
+                            !accessToken
                               ? 'bg-slate-700 opacity-50 cursor-not-allowed'
                               : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500'
                           }`}

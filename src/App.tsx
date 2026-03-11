@@ -26,7 +26,6 @@ export default function App() {
     location: 'US',
   });
   const [isSidebarOpen, setIsSidebarOpen] = usePersistedState('quori_sidebar_open', true);
-  const [geminiApiKey, setGeminiApiKey] = usePersistedState('quori_gemini_api_key', '');
   const [oauthConfig, setOAuthConfig] = usePersistedState<OAuthConfig>('quori_oauth_config', {
     clientId: '',
     clientSecret: '',
@@ -279,7 +278,7 @@ export default function App() {
           googleUser={googleUser}
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          hasApiKey={!!geminiApiKey}
+          hasAiAccess={!!googleUser}
         />
       </div>
 
@@ -297,7 +296,6 @@ export default function App() {
             story={activeStory}
             onUpdate={updateStory}
             bqConfig={bqConfig}
-            geminiApiKey={geminiApiKey}
             accessToken={googleUser?.accessToken ?? null}
             dataDictionary={dataDictionary}
             onUpdateDictionary={setDataDictionary}
@@ -314,7 +312,6 @@ export default function App() {
           />
         ) : (
           <WelcomeScreen
-            hasApiKey={!!geminiApiKey}
             hasGoogleUser={!!googleUser}
             projectCount={projects.length}
             onCreateProject={() => { setProjectModal({ mode: 'create' }); setProjectModalName(''); }}
@@ -355,8 +352,6 @@ export default function App() {
         <SettingsModal
           bqConfig={bqConfig}
           onBqConfigChange={setBqConfig}
-          geminiApiKey={geminiApiKey}
-          onGeminiApiKeyChange={setGeminiApiKey}
           oauthConfig={oauthConfig}
           onOAuthConfigChange={setOAuthConfig}
           googleUser={googleUser}
